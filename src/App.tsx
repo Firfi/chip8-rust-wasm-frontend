@@ -1,17 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import initWasm, { init_program as initChip8 } from "rust-wasm-chip8";
-import logo from './logo.svg';
+import { init_program as initChip8 } from "rust-wasm-chip8";
 import './App.css';
 
 const ROMS = [
   "BLINKY",
+  "CONNECT4",
+  "LANDING",
+  "MAZE",
+  "PONG",
+  "SPACE",
+  "TANK",
+  "TETRIS",
+  "TICTACTOE",
+  "WALL",
 ] as const;
 
 type Rom = typeof ROMS[number];
 
 const loadRom = async (rom: Rom) => {
-  const res = await fetch(`${process.env.PUBLIC_URL}/roms/${rom}`);
-  console.log(await res.text())
   const arrayBuffer = await fetch(`roms/${rom}`).then(r => {
     return r;
   }).then(i => i.arrayBuffer());
@@ -73,7 +79,6 @@ function App() {
     if (!canvas) return;
     clearCpuRef.current();
     clearCpuRef.current = initChip8(romData, canvas);
-    console.log("romData", romData)
   }, [romData, canvas]);
   return (
     <div className="App">
