@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CPU, init_program as initChip8 } from 'rust-wasm-chip8';
+import { CPU, init_program as initChip8 } from '@firfi/rust-wasm-chip8';
 import './App.css';
 
 const ROMS = [
@@ -18,9 +18,7 @@ const ROMS = [
 type Rom = typeof ROMS[number];
 
 const loadRom = async (rom: Rom) => {
-  const arrayBuffer = await fetch(`roms/${rom}`).then(r => {
-    return r;
-  }).then(i => i.arrayBuffer());
+  const arrayBuffer = await fetch(`roms/${rom}`).then(i => i.arrayBuffer());
   return new Uint8Array(arrayBuffer);
 }
 
@@ -50,25 +48,6 @@ const RomSelector = ({onChange}: RomSelectorProps) => {
     </select>
   );
 }
-
-const translateKeys = {
-  49: 0x1, // 1
-  50: 0x2, // 2
-  51: 0x3, // 3
-  52: 0xc, // 4
-  81: 0x4, // Q
-  87: 0x5, // W
-  69: 0x6, // E
-  82: 0xd, // R
-  65: 0x7, // A
-  83: 0x8, // S
-  68: 0x9, // D
-  70: 0xe, // F
-  90: 0xa, // Z
-  88: 0x0, // X
-  67: 0xb, // C
-  86: 0xf // V
-} as const;
 
 // circumvent the "move" semantic ("already moved" between await calls); we collect the key presses between cpu iterations
 const initKbBuffer = () => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import initWasm from 'rust-wasm-chip8';
+import initWasm from '@firfi/rust-wasm-chip8';
 
 export const WithWasmInitialized = ({children}: {children: React.ReactComponentElement<any>}) => {
   const [isInitialized, setIsInitialized] = useState(false);
