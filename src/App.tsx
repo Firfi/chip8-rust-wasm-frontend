@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { init_program as initChip8 } from "rust-wasm-chip8";
+import { CPU, init_program as initChip8 } from 'rust-wasm-chip8';
 import './App.css';
 
 const ROMS = [
@@ -73,12 +73,25 @@ const translateKeys = {
 function App() {
   const [romData, setRomData] = useState<Uint8Array | null>(null);
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
-  const clearCpuRef = useRef<() => void>(() => {});
+  const cpuRef = useRef<CPU | null>(null);
   useEffect(() => {
     if (!romData) return;
     if (!canvas) return;
-    clearCpuRef.current();
-    clearCpuRef.current = initChip8(romData, canvas);
+    let stop = false;
+    cpuRef.current = initChip8(romData, canvas);
+    const run = async () => {
+      while (cpuRef.current && !cpuRef.current?.is_done()) {
+        if (stop) {
+          cpuRef.current?.stop();
+          return;
+        }
+        cpuRef.current = await cpuRef.current?.run() || null;
+      }
+    };
+    run();
+    return () => {
+      stop = true;
+    }
   }, [romData, canvas]);
   return (
     <div className="App">
