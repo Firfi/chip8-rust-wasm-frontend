@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CPU, init_program as initChip8 } from '@firfi/rust-wasm-chip8';
+import React, { useCallback, useEffect, useState } from 'react';
+import { WasmProgram, init_program as initChip8 } from '@firfi/rust-wasm-chip8';
 import './App.css';
 
 const ROMS = [
@@ -49,65 +49,53 @@ const RomSelector = ({onChange}: RomSelectorProps) => {
   );
 }
 
-// circumvent the "move" semantic ("already moved" between await calls); we collect the key presses between cpu iterations
-const initKbBuffer = () => {
-  let buffer: [number, 'up' | 'down'][] = [];
+const initKeyboardListeners = (cpu: WasmProgram) => {
   const makeCb = (kind: 'up' | 'down') => (e: KeyboardEvent) => {
-    buffer.push([e.which || e.keyCode, kind]);
+    cpu[kind === 'up' ? 'key_up' : 'key_down'](e.which || e.keyCode);
   }
   const keyDownCb = makeCb('down');
   const keyUpCb = makeCb('up');
   document.addEventListener('keydown', keyDownCb);
   document.addEventListener('keyup', keyUpCb);
-  return {
-    drop: () => {
-      document.removeEventListener('keydown', keyDownCb);
-      document.removeEventListener('keyup', keyUpCb);
-      buffer = [];
-    },
-    flush: () => {
-      const r = [...buffer];
-      buffer = [];
-      return r;
-    }
-  }
+  return () => {
+    document.removeEventListener('keydown', keyDownCb);
+    document.removeEventListener('keyup', keyUpCb);
+  };
 }
 
-function App() {
+function GameRoom() {
   const [romData, setRomData] = useState<Uint8Array | null>(null);
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
-  const cpuRef = useRef<CPU | null>(null);
   useEffect(() => {
     if (!romData) return;
     if (!canvas) return;
-    let stop = false;
-    cpuRef.current = initChip8(romData, canvas);
-    let kbBuffer = initKbBuffer();
-    const run = async () => {
-      while (cpuRef.current && !cpuRef.current?.is_done()) {
-        if (stop) {
-          cpuRef.current?.stop();
-          cpuRef.current = null;
-          return;
-        }
-        const buffer = kbBuffer.flush();
-        buffer.forEach(([code, kind]) => {
-          cpuRef.current![kind === 'up' ? 'key_up' : 'key_down'](code);
-        })
-        cpuRef.current = await cpuRef.current!.run() || null;
-      }
-    };
-    run();
+    const cpu = initChip8(romData, canvas);
+    cpu.run();
+    const deinitKbListeners = initKeyboardListeners(cpu);
     return () => {
-      stop = true;
-      kbBuffer.drop();
+      cpu.stop();
+      cpu.free();
+      deinitKbListeners();
     }
   }, [romData, canvas]);
+  return <div>
+    <div><RomSelector onChange={setRomData} /></div>
+    <div><canvas width={640} height={320} ref={setCanvas} /></div>
+  </div>
+}
+
+function App() {
+
   return (
     <div className="App">
       <h1>Chip8 wasm on Rust</h1>
-      <div><RomSelector onChange={setRomData} /></div>
-      <div><canvas width={640} height={320} ref={setCanvas} /></div>
+      <div style={{display: "flex"}}>
+        <GameRoom />
+        <GameRoom />
+        <GameRoom />
+        <GameRoom />
+        <GameRoom />
+      </div>
       <div>Controls: 1234qwerasdfzxcv and whatnot</div>
     </div>
   );
