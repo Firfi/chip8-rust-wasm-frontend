@@ -69,7 +69,7 @@ function GameRoom() {
   useEffect(() => {
     if (!romData) return;
     if (!canvas) return;
-    const cpu = initChip8(romData, canvas);
+    const cpu = initChip8(romData, canvas.getContext('2d'));
     cpu.run();
     const deinitKbListeners = initKeyboardListeners(cpu);
     return () => {
